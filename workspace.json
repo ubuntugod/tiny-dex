@@ -1,6 +1,51 @@
 {
   "version": 2,
   "projects": {
+    "blockchain": {
+      "root": "packages/blockchain",
+      "sourceRoot": "packages/blockchain/src",
+      "projectType": "library",
+      "targets": {
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": ["packages/blockchain/**/*.ts"]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/workspace:run-commands",
+          "outputs": [],
+          "options": {
+            "command": "truffle test",
+            "cwd": "./packages/blockchain"
+          }
+        },
+        "compile": {
+          "executor": "@nrwl/workspace:run-commands",
+          "outputs": [],
+          "options": {
+            "command": "truffle compile",
+            "cwd": "./packages/blockchain"
+          }
+        },
+        "migrate": {
+          "executor": "@nrwl/workspace:run-commands",
+          "outputs": [],
+          "options": {
+            "command": "truffle migrate",
+            "cwd": "./packages/blockchain"
+          }
+        },
+        "console": {
+          "executor": "@nrwl/workspace:run-commands",
+          "outputs": [],
+          "options": {
+            "command": "truffle console",
+            "cwd": "./packages/blockchain"
+          }
+        }
+      }
+    },
     "frontend": {
       "root": "packages/frontend",
       "sourceRoot": "packages/frontend/src",
