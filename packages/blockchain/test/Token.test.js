@@ -3,7 +3,7 @@
 const Token = artifacts.require('Token');
 const expect = require('chai').use(require('chai-as-promised')).expect;
 
-contract('Token', () => {
+contract('Token', (accounts) => {
   let token;
   beforeEach(async () => {
     token = await Token.new();
@@ -23,16 +23,24 @@ contract('Token', () => {
       const result = await token.name();
       expect(result).to.equal(expectedResult.name);
     });
+
     it('Should have a valid symbol', async () => {
       const result = await token.symbol();
       expect(result).to.equal(expectedResult.symbol);
     });
+
     it('Should have valid decimals', async () => {
       const result = await token.decimals();
       expect(result.toNumber()).to.equal(expectedResult.decimals);
     });
+
     it('Should have a valid `totalSupply`', async () => {
       const result = await token.totalSupply();
+      expect(result.toString()).to.equal(expectedResult.totalSupply);
+    });
+
+    it('Should set the totalSupply to the account balance of the deployer', async () => {
+      const result = await token.balanceOf(accounts[0]);
       expect(result.toString()).to.equal(expectedResult.totalSupply);
     });
   });
