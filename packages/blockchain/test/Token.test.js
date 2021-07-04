@@ -64,5 +64,45 @@ contract('Token', (accounts) => {
         receiverEndingBalance.toString()
       );
     });
+
+    describe('Transfer Success', () => {
+      let tx, txLogs;
+      beforeEach(async () => {
+        tx = await token.transfer(receiver, amountToSend, {
+          from: sender,
+        });
+        txLogs = tx?.logs;
+      });
+
+      it('Should trigger a transfer event once transfer is done', async () => {
+        const result = txLogs[txLogs.length - 1]?.event;
+        expect(result).to.equal('Transfer');
+      });
+
+      it('Should transfer from the actual sender to desired receiver only', () => {
+        const { 0: from, 1: to } = txLogs[txLogs.length - 1]?.args;
+        expect(from).to.equal(sender);
+        expect(to).to.equal(receiver);
+      });
+    });
+
+    describe('Transfer Fail', () => {
+      const [, sender, receiver] = accounts;
+
+      it('Should not allow the transfer if there is insufficient fund', async () => {
+        const amountToSend = toBN(100);
+        const tx = token.transfer(receiver, amountToSend, {
+          from: sender,
+        });
+        await expect(tx).to.be.rejectedWith('Insufficient balance available');
+      });
+
+      it('Should not allow transfer to invalid address', async () => {
+        const tx = token.transfer(0x0, amountToSend, {
+          from: sender,
+        });
+        await expect(tx).to.be.rejected;
+      });
+    });
   });
 });
