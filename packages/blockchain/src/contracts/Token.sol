@@ -10,8 +10,14 @@ contract Token {
     uint8 public constant decimals = 18;
     uint256 public constant totalSupply = 21_000_000e18;
     mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
 
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
+    event Approval(
+        address indexed _owner,
+        address indexed _spender,
+        uint256 _value
+    );
 
     constructor() {
         balanceOf[msg.sender] = totalSupply;
@@ -39,6 +45,16 @@ contract Token {
         balanceOf[msg.sender] = balanceOf[msg.sender].sub(_value);
         balanceOf[_to] = balanceOf[_to].add(_value);
         emit Transfer(msg.sender, _to, _value);
+        return true;
+    }
+
+    function approve(address _spender, uint256 _value)
+        public
+        onlyValidAddress(_spender)
+        returns (bool success)
+    {
+        allowance[msg.sender][_spender] = _value;
+        emit Approval(msg.sender, _spender, _value);
         return true;
     }
 }
