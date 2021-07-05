@@ -105,4 +105,40 @@ contract('Token', (accounts) => {
       });
     });
   });
+
+  describe('Approve', () => {
+    const [sender, spender] = accounts;
+    let amount = toBN(100);
+
+    describe('Success', () => {
+      let tx;
+      beforeEach(async () => {
+        tx = await token.approve(spender, amount, { from: sender });
+      });
+
+      it('Should allow the owner to specify the allowance of the spender', async () => {
+        const remainingAllowance = await token.allowance(sender, spender);
+        expect(remainingAllowance.toString()).to.equal(amount.toString());
+      });
+
+      it('Should emit an `Approval` event', () => {
+        const logs = tx?.logs;
+        const result = logs[0].event;
+        expect(result).to.equal('Approval');
+      });
+
+      it('Should only approve the correct amount specified', () => {
+        const logs = tx?.logs;
+        const { 2: amountAllowed } = logs[0].args;
+        expect(amountAllowed.toString()).to.equal(amount.toString());
+      });
+    });
+
+    describe('Fail', () => {
+      it('Should throw error when the spender is invalid', async () => {
+        const tx = token.approve(0x0, amount, { from: sender });
+        await expect(tx).to.be.rejected;
+      });
+    });
+  });
 });
