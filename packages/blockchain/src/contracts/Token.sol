@@ -36,15 +36,22 @@ contract Token {
         _;
     }
 
+    function _transfer(
+        address _from,
+        address _to,
+        uint256 _value
+    ) internal onlyValidAddress(_from) onlyValidAddress(_to) {
+        balanceOf[_from] = balanceOf[_from].sub(_value);
+        balanceOf[_to] = balanceOf[_to].add(_value);
+        emit Transfer(_from, _to, _value);
+    }
+
     function transfer(address _to, uint256 _value)
         public
-        onlyValidAddress(_to)
         onlySufficientBalance(_value)
         returns (bool success)
     {
-        balanceOf[msg.sender] = balanceOf[msg.sender].sub(_value);
-        balanceOf[_to] = balanceOf[_to].add(_value);
-        emit Transfer(msg.sender, _to, _value);
+        _transfer(msg.sender, _to, _value);
         return true;
     }
 
@@ -55,6 +62,26 @@ contract Token {
     {
         allowance[msg.sender][_spender] = _value;
         emit Approval(msg.sender, _spender, _value);
+        return true;
+    }
+
+    modifier onlySufficientFundsForDelegation(address _from, uint256 _value) {
+        require(_value <= balanceOf[_from]);
+        require(_value <= allowance[_from][msg.sender]);
+        _;
+    }
+
+    function transferFrom(
+        address _from,
+        address _to,
+        uint256 _value
+    )
+        public
+        onlySufficientFundsForDelegation(_from, _value)
+        returns (bool success)
+    {
+        allowance[_from][msg.sender] = allowance[_from][msg.sender].sub(_value);
+        _transfer(_from, _to, _value);
         return true;
     }
 }
