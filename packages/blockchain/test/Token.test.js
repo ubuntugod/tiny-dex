@@ -18,7 +18,7 @@ contract('Token', (accounts) => {
     totalSupply: toBN(21_000_000),
   };
 
-  describe('Deployment', () => {
+  describe('TinyDEX Contract', () => {
     it('Should have a valid name', async () => {
       const result = await token.name();
       expect(result).to.equal(expectedResult.name);
@@ -45,7 +45,7 @@ contract('Token', (accounts) => {
     });
   });
 
-  describe('Transfer of Tokens', () => {
+  describe('transfer', () => {
     const [sender, receiver] = accounts;
     const amountToSend = toBN(10);
     it('Should reflect the correct balances in the accounts', async () => {
@@ -65,7 +65,7 @@ contract('Token', (accounts) => {
       );
     });
 
-    describe('Transfer Success', () => {
+    describe('Success', () => {
       let tx, txLogs;
       beforeEach(async () => {
         tx = await token.transfer(receiver, amountToSend, {
@@ -86,7 +86,7 @@ contract('Token', (accounts) => {
       });
     });
 
-    describe('Transfer Fail', () => {
+    describe('Fail', () => {
       const [, sender, receiver] = accounts;
 
       it('Should not allow the transfer if there is insufficient fund', async () => {
@@ -106,13 +106,14 @@ contract('Token', (accounts) => {
     });
   });
 
-  describe('Approve', () => {
-    const [sender, spender] = accounts;
-    let amount = toBN(100);
+  describe('approve', () => {
+    const [sender, , spender] = accounts;
+    let amount;
 
     describe('Success', () => {
       let tx;
       beforeEach(async () => {
+        amount = toBN(100);
         tx = await token.approve(spender, amount, { from: sender });
       });
 
@@ -137,6 +138,74 @@ contract('Token', (accounts) => {
     describe('Fail', () => {
       it('Should throw error when the spender is invalid', async () => {
         const tx = token.approve(0x0, amount, { from: sender });
+        await expect(tx).to.be.rejected;
+      });
+    });
+  });
+
+  describe('transferFrom', async () => {
+    const [sender, receiver, spender] = accounts;
+    let amount;
+
+    beforeEach(async () => {
+      amount = toBN(100);
+      await token.approve(spender, amount, { from: sender });
+    });
+
+    describe('Success', () => {
+      let tx, logs, senderInitialBalance, receiverInitialBalance;
+
+      beforeEach(async () => {
+        senderInitialBalance = await token.balanceOf(sender);
+        receiverInitialBalance = await token.balanceOf(receiver);
+        tx = await token.transferFrom(sender, receiver, amount, {
+          from: spender,
+        });
+        logs = tx.logs;
+      });
+
+      it('Should transfer the tokens from `sender` to `receiver`', async () => {
+        const senderBalance = await token.balanceOf(sender);
+        const receiverBalance = await token.balanceOf(receiver);
+        expect(senderBalance.toString()).to.equal(
+          senderInitialBalance.sub(amount).toString()
+        );
+        expect(receiverBalance.toString()).to.equal(
+          receiverInitialBalance.add(amount).toString()
+        );
+      });
+
+      it('Should trigger a transfer event once transfer is done', async () => {
+        const result = logs[0]?.event;
+        expect(result).to.equal('Transfer');
+      });
+
+      it('Should transfer correct amount from the sender to receiver', () => {
+        const { 0: from, 1: to, 2: value } = logs[0]?.args;
+        expect(from).to.equal(sender);
+        expect(to).to.equal(receiver);
+        expect(value.toString()).to.equal(amount.toString());
+      });
+
+      it('Should reset the `allowance`', async () => {
+        const remainingAllowance = await token.allowance(sender, spender);
+        expect(remainingAllowance.toString()).to.equal('0');
+      });
+    });
+
+    describe('Fail', () => {
+      it('Should not allow transfer to invalid address', async () => {
+        const tx = token.transferFrom(sender, 0x0, amount, {
+          from: spender,
+        });
+        await expect(tx).to.be.rejected;
+      });
+
+      it('Should not allow the transfer if there is insufficient funds', async () => {
+        const amountToSend = toBN(21_000_000_0);
+        const tx = token.transferFrom(sender, receiver, amountToSend, {
+          from: spender,
+        });
         await expect(tx).to.be.rejected;
       });
     });
